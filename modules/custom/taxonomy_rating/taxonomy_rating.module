@@ -1,0 +1,92 @@
+<?php
+
+use Drupal\node\Entity\Node;
+use Drupal\taxonomy_rating\TaxonomyRatingActions;
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ */
+function taxonomy_rating_taxonomy_term_insert(Drupal\Core\Entity\EntityInterface $entity) {
+    TaxonomyRatingActions::taxonomy_rating_calculation($entity->id());
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function taxonomy_rating_entity_update(Drupal\Core\Entity\EntityInterface $entity) {
+    // we use this hook to change the ratings of categories after a node has been reassigned.
+    if($entity->getEntityTypeId() == 'node') {
+        if(!empty($entity->get('field_category'))) {
+            $tid = $entity->get('field_category')->target_id;
+            TaxonomyRatingActions::taxonomy_rating_calculation($tid);
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function taxonomy_rating_entity_insert(Drupal\Core\Entity\EntityInterface $entity) {
+    // we update the rating when a node, or a comment is inserted.
+    if($entity->getEntityTypeId() == 'comment') {
+        $nid = $entity->getCommentedEntityId();
+        $node = Node::load($nid);
+
+        if(!empty($node->get('field_category'))) {
+            $tid = $node->get('field_category')->target_id;
+            TaxonomyRatingActions::taxonomy_rating_calculation($tid);
+        }
+    }
+    if($entity->getEntityTypeId() == 'node') {
+        if(!empty($entity->get('field_category'))) {
+            $tid = $entity->get('field_category')->target_id;
+            TaxonomyRatingActions::taxonomy_rating_calculation($tid);
+        }
+
+    }
+}
+
+// Had to alter the theme registry for this specific view, because the term page is render using this hook.
+// When I used a custom hook, the term page content was empty, thus it had an unpleasant appearance.
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function taxonomy_rating_theme_registry_alter(&$theme_registry) {
+    $theme_registry['views_view_unformatted']['path'] = drupal_get_path('module', 'taxonomy_rating') . '/templates';
+}
+
+// I used the node_list cache tag to update the term page rating when any node is created/updated/deleted.
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function taxonomy_rating_preprocess_views_view_unformatted(&$variables) {
+        $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+        if($term) {
+            $variables['rating'] = TaxonomyRatingActions::output();
+            $variables['tid'] = $term->id();
+            $variables['#cache']['max-age'] = 86400;
+            $variables['#cache']['tags'][] = 'node_list';
+        }
+}
+
+
+/**
+ * Implements hook_cron().
+ */
+function taxonomy_rating_cron() {
+    $renew = Drupal::configFactory()->getEditable('taxonomy_rating.config')->get('taxonomy_rating_reset');
+
+    if ((REQUEST_TIME - $renew) >= 86400) {
+        $query = \Drupal::database()
+            ->select('taxonomy_rating', 'tr')
+            ->fields('tr', array('tid'));
+        $tids = $query->execute()->fetchCol();
+
+        foreach($tids as $tid) {
+            TaxonomyRatingActions::update_term_rating($tid);
+        }
+
+        Drupal::configFactory()->getEditable('taxonomy_rating.config')->set('taxonomy_rating_reset', REQUEST_TIME);
+
+    }
+}

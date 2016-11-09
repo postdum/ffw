@@ -1,0 +1,6 @@
+publish_control.node_options_form:
+  path: '/publish_control'
+  defaults:
+    _form: 'Drupal\publish_control\Form\PublishControlForm'
+  requirements:
+    _permission: 'administer content'

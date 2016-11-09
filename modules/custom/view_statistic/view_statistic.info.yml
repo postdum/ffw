@@ -1,0 +1,6 @@
+name: Node View Statistics
+description: Provides node view statistics
+package: FFW
+
+type: module
+core: 8.x

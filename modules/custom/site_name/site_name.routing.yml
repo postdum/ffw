@@ -1,0 +1,6 @@
+site_name.site_name_form:
+  path: '/myconfig'
+  defaults:
+    _form: '\Drupal\site_name\Form\SiteNameForm'
+  requirements:
+    _permission: 'administer mymodule'

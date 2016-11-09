@@ -1,0 +1,7 @@
+firstpage.my_page:
+  path: '/mypage'
+  defaults:
+    _controller: '\Drupal\firstpage\Controller\MyPageController::content'
+    _title: 'My Page'
+  requirements:
+    _permission: 'access content'

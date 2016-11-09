@@ -1,0 +1,6 @@
+name: Taxonomy Rating
+description: Provides the rating system for the taxonomy terms.
+package: FFW
+
+type: module
+core: 8.x

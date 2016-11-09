@@ -1,0 +1,3 @@
+'administer mymodule':
+  title: 'Administer My Module'
+  description: 'Gives the permission to change the site name in the custom form'

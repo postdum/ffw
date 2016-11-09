@@ -1,0 +1,6 @@
+name: First Page Module
+description: Creates a page showing the greeting message.
+package: FFW
+
+type: module
+core: 8.x

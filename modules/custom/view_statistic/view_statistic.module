@@ -1,0 +1,109 @@
+<?php
+
+use Drupal\User\Entity\User;
+
+
+/**
+ * @param array $build
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ * @param \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display
+ */
+function view_statistic_node_view(array &$build, Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display) {
+    $build['view_statistic_addition'] = array(
+            '#markup' => node_view_statistics($entity),
+            '#weight' => -10,
+            '#cache' => array('max-age' => 0)
+        );
+}
+
+/**
+ * @param $entity
+ * @return string
+ */
+function node_view_statistics($entity) {
+    $uid = \Drupal::currentUser()->id();
+    $nid = $entity->id();
+
+    $query = \Drupal::database()
+        ->select('node_view', 'nv')
+        ->fields('nv')
+        ->execute();
+    $query->allowRowCount=TRUE;
+    $nid_count = $query->rowCount();
+
+    if($nid_count == 0) {
+        $query = \Drupal::database()
+            ->insert('node_view')
+            ->fields(array(
+                'nid' => $nid,
+                'uid' => $uid,
+                'daycount' => 1,
+                'totalcount' => 1,
+                'timestamp' => REQUEST_TIME,
+            ));
+        $query->execute();
+    } else {
+        $query = \Drupal::database()
+            ->select('node_view', 'nv')
+            ->fields('nv');
+        $query->condition('nid', $nid);
+        $result = $query->execute()->fetchAssoc();
+
+        if($result['nid'] != $nid) {
+            $query = \Drupal::database()
+                ->insert('node_view')
+                ->fields(array(
+                    'nid' => $nid,
+                    'uid' => $uid,
+                    'daycount' => 1,
+                    'totalcount' => 1,
+                    'timestamp' => REQUEST_TIME
+                ));
+            $query->execute();
+        } else {
+            $query = \Drupal::database()
+                ->update('node_view')
+                ->fields(array(
+                    'uid' => $uid,
+                    'timestamp' => REQUEST_TIME
+                ))
+                ->expression('daycount', 'daycount + 1')
+                ->expression('totalcount', 'totalcount + 1');
+            $query->execute();
+        }
+    }
+
+    $query = \Drupal::database()
+        ->select('node_view', 'nv')
+        ->fields('nv');
+    $query->condition('nid', $nid);
+    $result = $query->execute()->fetchAssoc();
+
+    $visitor = User::load($result['uid']);
+    $name = $visitor->getDisplayName();
+
+    $output = '';
+    $output .= '<p>Number of views: ' . $result['daycount'] . ' today/ ';
+    $output .= $result['totalcount'] . ' total</p>';
+    $output .= '<p><u>Last viewed by: ' . $name . ' at ' . date('d.m.y H:i', $result['timestamp']) . '</u></p>';
+
+    return $output;
+}
+
+/**
+ * Implements hook_cron().
+ */
+function view_statistic_cron() {
+    $renew = Drupal::configFactory()->getEditable('view_statistic.config')->get('view_statistic_reset');
+
+    if ((REQUEST_TIME - $renew) >= 86400) {
+        $query = \Drupal::database()
+            ->update('node_view')
+            ->fields(array(
+                'daycount' => 0
+            ));
+        $query->execute();
+
+        Drupal::configFactory()->getEditable('view_statistic.config')->set('view_statistic_reset', REQUEST_TIME);
+    }
+}

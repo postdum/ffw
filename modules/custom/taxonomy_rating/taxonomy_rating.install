@@ -1,0 +1,33 @@
+<?php
+/**
+ * Implements hook_schema()
+ */
+function taxonomy_rating_schema() {
+    $schema['taxonomy_rating'] = array(
+        'description' => 'Table used to calculate rating of specific categories',
+        'fields' => array(
+            'rating' => array(
+                'description' => 'Rating value of the term category',
+                'type' => 'numeric',
+                'unsigned' => TRUE,
+                'not null' => FALSE,
+                'precision' => 10,
+                'scale' => 2,
+            ),
+            'tid' => array(
+                'description' => 'Term ID',
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+        ),
+        'primay_key' => array('tid'),
+    );
+
+    return $schema;
+}
+
+function taxonomy_rating_uninstall() {
+    drupal_uninstall_schema('taxonomy_rating');
+    \Drupal::service('config.factory')->getEditable('taxonomy_rating.config')->delete();
+}

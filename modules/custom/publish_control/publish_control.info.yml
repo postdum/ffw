@@ -1,0 +1,6 @@
+name: Publish Control
+description: A module that provides the functionality to publish/unpublish, set the "Sticky" status, and delete it.
+package: FFW
+
+type: module
+core: 8.x

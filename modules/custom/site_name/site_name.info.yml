@@ -1,0 +1,6 @@
+name: Site Name
+description: A custom form that provides the site name change functionality.
+package: FFW
+
+type: module
+core: 8.x
