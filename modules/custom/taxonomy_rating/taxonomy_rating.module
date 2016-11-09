@@ -42,11 +42,23 @@ function taxonomy_rating_entity_insert(Drupal\Core\Entity\EntityInterface $entit
             $tid = $entity->get('field_category')->target_id;
             TaxonomyRatingActions::taxonomy_rating_calculation($tid);
         }
-
     }
 }
 
-// Had to alter the theme registry for this specific view, because the term page is render using this hook.
+// node_list cache tag is not affected by node deletion, so we have to implement this.
+/**
+ * Implements hook_entity_delete().
+ */
+function taxonomy_rating_entity_delete(Drupal\Core\Entity\EntityInterface $entity) {
+    if($entity->getEntityTypeId() == 'node') {
+        if(!empty($entity->get('field_category'))) {
+            $tid = $entity->get('field_category')->target_id;
+            TaxonomyRatingActions::taxonomy_rating_calculation($tid);
+        }
+    }
+}
+
+// Had to alter the theme registry for this specific view, because the term page is rendered using this hook.
 // When I used a custom hook, the term page content was empty, thus it had an unpleasant appearance.
 /**
  * Implements hook_theme_registry_alter().
@@ -55,7 +67,7 @@ function taxonomy_rating_theme_registry_alter(&$theme_registry) {
     $theme_registry['views_view_unformatted']['path'] = drupal_get_path('module', 'taxonomy_rating') . '/templates';
 }
 
-// I used the node_list cache tag to update the term page rating when any node is created/updated/deleted.
+// I used the node_list cache tag to update the term page rating when any node is created/updated.
 /**
  * Implements hook_preprocess_HOOK().
  */
